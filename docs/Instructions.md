@@ -23,7 +23,6 @@ Create a command block and using an anvil name it "tpwandadmin". Right clicking 
 
 Once a well known location has been added a user with a tpwand stick will be able to teleport to any of the well known locations.
 
-
 ## Installing on a Bedrock server
 
 To install this on a Bedrock server takes a little more work, but roughly:
@@ -38,19 +37,14 @@ To install this on a Bedrock server takes a little more work, but roughly:
 4) Run your server and after it has started shut it down.
 5) Open "valid_known_packs.json" in the root of your server directory and you should now see an entry at the top for tpwand. Make a note of the uuid and version.
 6) Under your "worlds\Bedrock level" directory (you might have renamed "Bedrock level" or have more than one world there) you need to create a file called "world_behavior_packs.json". It should look like the following:
-```json
-[
-	
-	{
-		"pack_id" : "XXX",
-		"version" : [ 1, 0, 0 ]
-	}
-]
-```
-The `pack_id` should match the uuid you noted earlier and the version should also match. At the time of typing, the above is correct.
+        [
+            {
+                "pack_id" : "XXX",
+                "version" : [ 1, 0, 0 ]
+            }
+        ]
+    The `pack_id` should match the uuid you noted earlier and the version should also match. At the time of typing, the above is correct.
 
 7) Restart your server. If all went well you should see the following in your server log:
 
-```text
         [Scripting] tpwand enabled...
-```
