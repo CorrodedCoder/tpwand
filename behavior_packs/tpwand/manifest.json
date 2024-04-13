@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "tpwand behavior pack",
+    "description": "tpwand pack description",
+    "uuid": "65a00286-c671-4970-bee0-5199df8d34d4",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 20, 60]
+  },
+  "modules": [
+    {
+      "description": "Script resources",
+      "language": "javascript",
+      "type": "script",
+      "uuid": "b7b57f86-95ef-4f6d-8096-2eee39c5e2e6",
+      "version": [1, 0, 0],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.8.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "1.1.0"
+    }
+  ]
+}
