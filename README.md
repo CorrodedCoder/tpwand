@@ -17,11 +17,12 @@ See [instructions](docs/Instructions.md) for further details of how to install a
 
 ## Pre-requisites to build the add-on
 
-Install https://nodejs.org/en
+[Install Node](https://nodejs.org/en)
 
 ## Building the add-on
 
 From a command prompt/terminal browse to the repository and run:
+
 1) `npm install`
 2) `npm run mcaddon`
 
@@ -32,7 +33,7 @@ Note: On Windows, you might need to run the following command under PowerShell i
 
 ## Developer convenience
 
-The infrastructure to build/deploy this add-on was taken from Microsoft's minecraft-scripting-samples and so the instructions for it may be used here as well (see https://github.com/microsoft/minecraft-scripting-samples/blob/main/ts-starter/README.md).
+The infrastructure to build/deploy this add-on was taken from Microsoft's minecraft-scripting-samples and so the [instructions for it](https://github.com/microsoft/minecraft-scripting-samples/blob/main/ts-starter/README.md) may be used here as well.
 
 Specifically you can also run the following command to on Windows to have the add-on build and deliver to your Minecraft client:
 `npm run local-deploy`
