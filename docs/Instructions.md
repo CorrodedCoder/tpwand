@@ -36,7 +36,7 @@ To install this on a Bedrock server takes a little more work, but roughly:
     development_behavior_packs\tpwand\scripts\main.js
 4) Run your server and after it has started shut it down.
 5) Open "valid_known_packs.json" in the root of your server directory and you should now see an entry at the top for tpwand. Make a note of the uuid and version.
-6) Under your "worlds\Bedrock level" directory (you might have renamed "Bedrock level" or have more than one world there) you need to create or edit a file called "world_behavior_packs.json". It should look include the following:
+6) Under your "worlds\Bedrock level" directory (you might have renamed "Bedrock level" or have more than one world there) you need to create or edit a file called "world_behavior_packs.json". It should include the following:
         [
             {
                 "pack_id" : "65a00286-c671-4970-bee0-5199df8d34d4",
