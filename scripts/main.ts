@@ -1,11 +1,13 @@
 import { world, system, Player, Vector3, ItemUseOnBeforeEvent, ItemUseOnAfterEvent, ItemUseBeforeEvent, ItemUseAfterEvent } from "@minecraft/server";
 import { ModalFormData, ActionFormData, ActionFormResponse, MessageFormData } from "@minecraft/server-ui";
 
-class wellKnownLocations {
+const tpWandDynamicPropertyName = 'tpwand_locations';
+
+class LocationRegistry {
   locationData!: { [ key: string ]: any};
 
   constructor(serializedData: string){
-    this.locationData = serializedData ? JSON.parse(serializedData) : {"location": []};
+    this.locationData = serializedData ? JSON.parse(serializedData) : {"locations": []};
   }
 
   names(): string[] {
@@ -38,9 +40,39 @@ class wellKnownLocations {
   }
 }
 
-function wellKnownLocationUIAdd(locations: wellKnownLocations, player: Player){
+interface SerializedLocationRegistry extends LocationRegistry{
+  save(): void
+}
+
+class WellKnownLocationRegistry extends LocationRegistry implements SerializedLocationRegistry{
+  propertyName!: string;
+  constructor(propertyName: string){
+    super(world.getDynamicProperty(propertyName) as string);
+    this.propertyName = propertyName;
+  }
+
+  save(): void {
+    world.setDynamicProperty(this.propertyName, this.serialize());
+  }
+} 
+
+class PersonalLocationRegistry extends LocationRegistry implements SerializedLocationRegistry{
+  player!: Player;
+  propertyName!: string;
+  constructor(player: Player, propertyName: string){
+    super(player.getDynamicProperty(propertyName) as string);
+    this.player = player;
+    this.propertyName = propertyName;
+  }
+
+  save(): void {
+    this.player.setDynamicProperty(this.propertyName, this.serialize());
+  }
+} 
+
+function locationRegistryUIAdd(locations: SerializedLocationRegistry, player: Player){
   let form = new ModalFormData()
-    .title("tpwand add well known location")
+    .title("tpwand add location")
     .textField("name", "")
     .textField("x", player.location.x.toFixed(1), player.location.x.toFixed(1))
     .textField("y", player.location.y.toFixed(1), player.location.y.toFixed(1))
@@ -50,17 +82,24 @@ function wellKnownLocationUIAdd(locations: wellKnownLocations, player: Player){
       return;
     }
     if(r.formValues){
-      locations.add(r.formValues[0] as string, parseFloat(r.formValues[1] as string), parseFloat(r.formValues[2] as string), parseFloat(r.formValues[3] as string));
-      world.setDynamicProperty('tpwand_locations', locations.serialize());
+      const x = Number(r.formValues[1]);
+      const y = Number(r.formValues[1]);
+      const z = Number(r.formValues[1]);
+      if( isNaN(x) || isNaN(y) || isNaN(z) ){
+        new ActionFormData().title("tpwand").body("Invalid number format specified!").button("Okay").show(player);
+        return;
+      }
+      locations.add(r.formValues[0] as string, x, y, z);
+      locations.save();
     }
   }).catch((e) => {
     console.error(e, e.stack);
   });
 }
 
-function wellKnownLocationUIRemove(locations: wellKnownLocations, player: Player){
+function locationRegistryUIRemove(locations: SerializedLocationRegistry, player: Player){
   let form = new ModalFormData()
-    .title("tpwand remove well known location")
+    .title("tpwand remove location")
     .dropdown('Location to remove:', locations.names());
   form.show(player).then(r => {
     if(r.canceled) {
@@ -68,17 +107,16 @@ function wellKnownLocationUIRemove(locations: wellKnownLocations, player: Player
     }
     if(r.formValues){
       locations.remove(r.formValues[0] as number);
-      world.setDynamicProperty('tpwand_locations', locations.serialize());
+      locations.save();
     }
   }).catch((e) => {
     console.error(e, e.stack);
   });
 }
 
-function wellKnownLocationUI(player: Player) {
-  let locations = new wellKnownLocations(world.getDynamicProperty('tpwand_locations') as string);
+function locationRegistryUI(player: Player, locations: SerializedLocationRegistry) {
   const form = new ActionFormData()
-    .title('tpwand admin')
+    .title('tpwand manage locations')
     .body('Select action')
     .button('Add well known location');
   if(locations.count() !== 0){
@@ -90,11 +128,11 @@ function wellKnownLocationUI(player: Player) {
         break;
       }
       case 0: {
-        wellKnownLocationUIAdd(locations, player);
+        locationRegistryUIAdd(locations, player);
         break;
       }
       case 1: {
-        wellKnownLocationUIRemove(locations, player);
+        locationRegistryUIRemove(locations, player);
         break;
       }
     }
@@ -147,8 +185,7 @@ function teleportToPlayerUI(player: Player){
 }
 
 
-function teleportToWellKnownLocationUI(player: Player){
-  const locations = new wellKnownLocations(world.getDynamicProperty('tpwand_locations') as string);
+function teleportToWellKnownLocationUI(player: Player, locations: LocationRegistry){
   if(locations.count() === 0){
     new ActionFormData().title("tpwand").body("No locations available!").button("Okay").show(player);
     return;
@@ -175,7 +212,9 @@ function teleportUI(player: Player) {
     .body('Choose teleport action')
     .button('Teleport to world spawn point')
     .button('Teleport to player')
-    .button('Teleport to well known location');
+    .button('Teleport to well known location')
+    .button('Teleport to personal known location')
+    .button('Configure personal known locations');
   form.show(player).then((response: ActionFormResponse) => {
     switch(response.selection){
       case undefined:{
@@ -190,7 +229,15 @@ function teleportUI(player: Player) {
         break;
       }
       case 2:{
-        teleportToWellKnownLocationUI(player);
+        teleportToWellKnownLocationUI(player, new WellKnownLocationRegistry(tpWandDynamicPropertyName));
+        break;
+      }
+      case 3:{
+        teleportToWellKnownLocationUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName));
+        break;
+      }
+      case 4:{
+        locationRegistryUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName));
         break;
       }
     }
@@ -223,7 +270,7 @@ function registerTpWandEvents(){
   world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
     if(isTpWandAdminEvent(event)) {
       event.cancel = true;
-      system.run(() => wellKnownLocationUI(event.source));
+      system.run(() => locationRegistryUI(event.source, new WellKnownLocationRegistry(tpWandDynamicPropertyName)));
     }
   });
   
