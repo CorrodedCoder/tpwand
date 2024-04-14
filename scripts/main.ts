@@ -38,65 +38,74 @@ class wellKnownLocations {
   }
 }
 
+function wellKnownLocationUIAdd(locations: wellKnownLocations, player: Player){
+  let form = new ModalFormData()
+    .title("tpwand add well known location")
+    .textField("name", "")
+    .textField("x", player.location.x.toFixed(1), player.location.x.toFixed(1))
+    .textField("y", player.location.y.toFixed(1), player.location.y.toFixed(1))
+    .textField("z", player.location.z.toFixed(1), player.location.z.toFixed(1));
+  form.show(player).then(r => {
+    if(r.canceled) {
+      return;
+    }
+    if(r.formValues){
+      locations.add(r.formValues[0] as string, parseFloat(r.formValues[1] as string), parseFloat(r.formValues[2] as string), parseFloat(r.formValues[3] as string));
+      world.setDynamicProperty('tpwand_locations', locations.serialize());
+    }
+  }).catch((e) => {
+    console.error(e, e.stack);
+  });
+}
+
+function wellKnownLocationUIRemove(locations: wellKnownLocations, player: Player){
+  let form = new ModalFormData()
+    .title("tpwand remove well known location")
+    .dropdown('Location to remove:', locations.names());
+  form.show(player).then(r => {
+    if(r.canceled) {
+      return;
+    }
+    if(r.formValues){
+      locations.remove(r.formValues[0] as number);
+      world.setDynamicProperty('tpwand_locations', locations.serialize());
+    }
+  }).catch((e) => {
+    console.error(e, e.stack);
+  });
+}
+
+function wellKnownLocationUI(player: Player) {
+  let locations = new wellKnownLocations(world.getDynamicProperty('tpwand_locations') as string);
+  const form = new ActionFormData()
+    .title('tpwand admin')
+    .body('Select action')
+    .button('Add well known location');
+  if(locations.count() !== 0){
+    form.button('Remove well known location');
+  }
+  form.show(player).then((response: ActionFormResponse) => {
+    switch(response.selection){
+      case undefined: {
+        break;
+      }
+      case 0: {
+        wellKnownLocationUIAdd(locations, player);
+        break;
+      }
+      case 1: {
+        wellKnownLocationUIRemove(locations, player);
+        break;
+      }
+    }
+  });
+}
+
 world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
   if (event.itemStack.typeId === "minecraft:command_block"){
     if(event.itemStack.nameTag === "tpwandadmin" ) {
       event.cancel = true;
-      system.run(() => {
-        const player: Player = event.source;
-        let locations = new wellKnownLocations(world.getDynamicProperty('tpwand_locations') as string);
-        const initForm = new ActionFormData()
-          .title('tpwand admin')
-          .body('Select action')
-          .button('Add well known location');
-        if(locations.count() !== 0){
-          initForm.button('Remove well known location');
-        }
-        initForm.show(player).then((response: ActionFormResponse) => {
-          switch(response.selection){
-            case undefined: {
-              break;
-            }
-            case 0: {
-              let form = new ModalFormData()
-                .title("tpwand add well known location")
-                .textField("name", "")
-                .textField("x", player.location.x.toFixed(1), player.location.x.toFixed(1))
-                .textField("y", player.location.y.toFixed(1), player.location.y.toFixed(1))
-                .textField("z", player.location.z.toFixed(1), player.location.z.toFixed(1));
-              form.show(event.source).then(r => {
-                if(r.canceled) {
-                  return;
-                }
-                if(r.formValues){
-                  locations.add(r.formValues[0] as string, parseFloat(r.formValues[1] as string), parseFloat(r.formValues[2] as string), parseFloat(r.formValues[3] as string));
-                  world.setDynamicProperty('tpwand_locations', locations.serialize());
-                }
-              }).catch((e) => {
-                console.error(e, e.stack);
-              });
-              break;
-            }
-            case 1: {
-              let form = new ModalFormData()
-                .title("tpwand remove well known location")
-                form.dropdown('Location to remove:', locations.names());
-              form.show(event.source).then(r => {
-                if(r.canceled) {
-                  return;
-                }
-                if(r.formValues){
-                  locations.remove(r.formValues[0] as number);
-                  world.setDynamicProperty('tpwand_locations', locations.serialize());
-                }
-              }).catch((e) => {
-                console.error(e, e.stack);
-              });
-              break;
-            }
-          }
-        });
-      });
+      system.run(() => wellKnownLocationUI(event.source));
     }
   }
 });
