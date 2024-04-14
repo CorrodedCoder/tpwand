@@ -13,6 +13,8 @@ Create a stick and using an anvil name it "tpwand". Right clicking on it will ca
 1) Teleport to the world spawn point.
 2) Teleport to the location of other players in your multiplayer world.
 3) Teleport to a well known location (previously created by an admin).
+4) Teleport to a personal location (previously created by you).
+5) In game UI to add/remove personal locations.
 
 ## Testing the admin functionality
 
