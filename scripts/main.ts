@@ -123,19 +123,6 @@ function isTpWandEvent(event: ItemUseAfterEvent): boolean {
   return false;
 }
 
-world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
-  if(isTpWandAdminEvent(event)) {
-    event.cancel = true;
-    system.run(() => wellKnownLocationUI(event.source));
-  }
-});
-
-world.beforeEvents.itemUseOn.subscribe((event: ItemUseOnBeforeEvent) => {
-  if (isTpWandAdminEvent(event)){
-      event.cancel = true;
-  }
-});
-
 function teleportToWorldSpawnLocationUI(player: Player) {
   const loc = world.getDefaultSpawnLocation();
   // If Y is this value then there is no default world spawn location set.
@@ -232,10 +219,27 @@ function teleportUI(player: Player) {
   });
 }
 
-world.afterEvents.itemUse.subscribe((event: ItemUseAfterEvent) => {
-  if (isTpWandEvent(event)){
-    teleportUI(event.source);
-  }
-});
+function registerTpWandEvents(){
+  world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
+    if(isTpWandAdminEvent(event)) {
+      event.cancel = true;
+      system.run(() => wellKnownLocationUI(event.source));
+    }
+  });
+  
+  world.beforeEvents.itemUseOn.subscribe((event: ItemUseOnBeforeEvent) => {
+    if (isTpWandAdminEvent(event)){
+        event.cancel = true;
+    }
+  });
+  
+  world.afterEvents.itemUse.subscribe((event: ItemUseAfterEvent) => {
+    if (isTpWandEvent(event)){
+      teleportUI(event.source);
+    }
+  });
+}
+
+registerTpWandEvents();
 
 console.log("tpwand enabled...");
