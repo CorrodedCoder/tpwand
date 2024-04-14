@@ -140,7 +140,7 @@ function teleportToWorldSpawnLocationUI(player: Player) {
   const loc = world.getDefaultSpawnLocation();
   // If Y is this value then there is no default world spawn location set.
   if( loc.y === 32767){
-      new ActionFormData().title("tpwand").body("Default world spawn location has not been set!").button("Okay").show(player);
+      new ActionFormData().title("tpwand").body("Default world spawn location has not yet been set!").button("Okay").show(player);
       return;
   }
   player.sendMessage("Your wish is my command...");
@@ -148,28 +148,28 @@ function teleportToWorldSpawnLocationUI(player: Player) {
 }
 
 function teleportToPlayerUI(player: Player){
-  const other_players: Player[] = world.getAllPlayers();
-  if(other_players.length === 1){
+  const otherPlayers: Player[] = world.getAllPlayers();
+  if(otherPlayers.length === 1){
     new ActionFormData().title("tpwand").body("No other players available!").button("Okay").show(player);
     return;
   }
-  let form = new ModalFormData()
-    .title("tpwand");
-  let player_names: string[] = [];
-  for(const other of other_players){
+  let playerNames: string[] = [];
+  for(const other of otherPlayers){
     if( other.name !== player.name ) {
-      player_names.push(other.name);
+      playerNames.push(other.name);
     }
   }
-  form.dropdown('Teleport to player', player_names);
+  let form = new ModalFormData()
+    .title("tpwand")
+    .dropdown('Teleport to player', playerNames);
   form.show(player).then(r => {
     if(r.canceled) {
       return;
     }
     if(r.formValues){
-      const index = Number(r.formValues[0]);
-      const other = other_players.find((op: Player) => {
-        return op.name === player_names[index];
+      const targetPlayerName = playerNames[r.formValues[0] as number];
+      const other = otherPlayers.find((op: Player) => {
+        return op.name === targetPlayerName;
       });
       if(other){
         player.sendMessage("Your wish is my command...");
