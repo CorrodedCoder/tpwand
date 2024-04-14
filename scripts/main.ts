@@ -101,28 +101,6 @@ function wellKnownLocationUI(player: Player) {
   });
 }
 
-function isTpWandAdminEvent(event: ItemUseAfterEvent|ItemUseOnAfterEvent): boolean {
-  if(
-    (event.itemStack.typeId === "minecraft:command_block")
-    &&
-    (event.itemStack.nameTag === "tpwandadmin")
-  ){
-    return true;
-  }
-  return false;
-}
-
-function isTpWandEvent(event: ItemUseAfterEvent): boolean {
-  if(
-    (event.itemStack.typeId === "minecraft:stick")
-    &&
-    (event.itemStack.nameTag === "tpwand")
-  ){
-    return true;
-  }
-  return false;
-}
-
 function teleportToWorldSpawnLocationUI(player: Player) {
   const loc = world.getDefaultSpawnLocation();
   // If Y is this value then there is no default world spawn location set.
@@ -217,6 +195,28 @@ function teleportUI(player: Player) {
       }
     }
   });
+}
+
+function isTpWandAdminEvent(event: ItemUseAfterEvent|ItemUseOnAfterEvent): boolean {
+  if(
+    (event.itemStack.typeId === "minecraft:command_block")
+    &&
+    (event.itemStack.nameTag === "tpwandadmin")
+  ){
+    return true;
+  }
+  return false;
+}
+
+function isTpWandEvent(event: ItemUseAfterEvent): boolean {
+  if(
+    (event.itemStack.typeId === "minecraft:stick")
+    &&
+    (event.itemStack.nameTag === "tpwand")
+  ){
+    return true;
+  }
+  return false;
 }
 
 function registerTpWandEvents(){
