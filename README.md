@@ -10,8 +10,10 @@ It can be used as part of the normal Minecraft Bedrock client or as part of the 
 
 1) Teleport to another players location by selecting their name in a UI.
 2) Teleport to the current world spawn point.
-3) Teleport to well known locations as previously created by an operator.
-4) Operator only UI for in game configuration of named well known locations.
+3) Teleport to locations previously created by yourself.
+4) User UI for in game configuration of named locations.
+5) Teleport to well known locations as previously created by an operator.
+6) Operator only UI for in game configuration of named well known locations.
 
 See [instructions](docs/Instructions.md) for further details of how to install and use the add-on.
 
