@@ -83,8 +83,8 @@ function locationRegistryUIAdd(locations: SerializedLocationRegistry, player: Pl
     }
     if(r.formValues){
       const x = Number(r.formValues[1]);
-      const y = Number(r.formValues[1]);
-      const z = Number(r.formValues[1]);
+      const y = Number(r.formValues[2]);
+      const z = Number(r.formValues[3]);
       if( isNaN(x) || isNaN(y) || isNaN(z) ){
         new ActionFormData().title("tpwand").body("Invalid number format specified!").button("Okay").show(player);
         return;
