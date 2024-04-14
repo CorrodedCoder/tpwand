@@ -1,23 +1,55 @@
 import { world, system, Player, Vector3, ItemUseOnBeforeEvent, ItemUseBeforeEvent, ItemUseAfterEvent } from "@minecraft/server";
 import { ModalFormData, ActionFormData, ActionFormResponse, MessageFormData } from "@minecraft/server-ui";
 
+class wellKnownLocations {
+  locationData!: { [ key: string ]: any};
+
+  constructor(serializedData: string){
+    this.locationData = serializedData ? JSON.parse(serializedData) : {"location": []};
+  }
+
+  names(): string[] {
+    let names: string[] = [];
+    for(const location of this.locationData.locations){
+      names.push(`${location.name} (${location.x}, ${location.y}, ${location.z})`);
+    }
+    return names;
+  }
+
+  add(name: string, x: number, y: number, z: number) {
+    this.locationData.locations.push({"name": name, "x": x, "y": y, "z": z});
+  }
+
+  remove(index: number) {
+    this.locationData.locations.splice(index, 1);
+  }
+
+  get(index: number): Vector3 {
+    const location = this.locationData.locations[index];
+    return {x: location.x, y: location.y, z: location.z};
+  }
+
+  serialize() : string {
+    return JSON.stringify(this.locationData);
+  }
+
+  count(): number {
+    return this.locationData.locations.length;
+  }
+}
+
 world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
   if (event.itemStack.typeId === "minecraft:command_block"){
     if(event.itemStack.nameTag === "tpwandadmin" ) {
       event.cancel = true;
       system.run(() => {
-        const wellKnownLocationsProperty: string = world.getDynamicProperty('tpwand_locations') as string;
-        let wellKnownLocations = wellKnownLocationsProperty ? JSON.parse(wellKnownLocationsProperty) : {"locations": []};
-        let locationNames: string[] = [];
-        for(const wellKnownLocation of wellKnownLocations.locations){
-          locationNames.push(`${wellKnownLocation.name} (${wellKnownLocation.x}, ${wellKnownLocation.y}, ${wellKnownLocation.z})`);
-        }
         const player: Player = event.source;
+        let locations = new wellKnownLocations(world.getDynamicProperty('tpwand_locations') as string);
         const initForm = new ActionFormData()
           .title('tpwand admin')
           .body('Select action')
           .button('Add well known location');
-        if(wellKnownLocations.locations.length !== 0){
+        if(locations.count() !== 0){
           initForm.button('Remove well known location');
         }
         initForm.show(player).then((response: ActionFormResponse) => {
@@ -37,8 +69,8 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
                   return;
                 }
                 if(r.formValues){
-                  wellKnownLocations.locations.push({"name": r.formValues[0], "x": Number(r.formValues[1]), "y": Number(r.formValues[2]), "z": Number(r.formValues[3])});
-                  world.setDynamicProperty('tpwand_locations', JSON.stringify(wellKnownLocations));
+                  locations.add(r.formValues[0] as string, parseFloat(r.formValues[1] as string), parseFloat(r.formValues[2] as string), parseFloat(r.formValues[3] as string));
+                  world.setDynamicProperty('tpwand_locations', locations.serialize());
                 }
               }).catch((e) => {
                 console.error(e, e.stack);
@@ -48,15 +80,14 @@ world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
             case 1: {
               let form = new ModalFormData()
                 .title("tpwand remove well known location")
-                form.dropdown('Location to remove:', locationNames);
+                form.dropdown('Location to remove:', locations.names());
               form.show(event.source).then(r => {
                 if(r.canceled) {
                   return;
                 }
                 if(r.formValues){
-                  const index = Number(r.formValues[0]);
-                  wellKnownLocations.locations.splice(index, 1);
-                  world.setDynamicProperty('tpwand_locations', JSON.stringify(wellKnownLocations));
+                  locations.remove(r.formValues[0] as number);
+                  world.setDynamicProperty('tpwand_locations', locations.serialize());
                 }
               }).catch((e) => {
                 console.error(e, e.stack);
@@ -137,29 +168,21 @@ world.afterEvents.itemUse.subscribe((event: ItemUseAfterEvent) => {
             break;
           }
           case 2:{
-            const wellKnownLocationsProperty: string = world.getDynamicProperty('tpwand_locations') as string;
-            const wellKnownLocations = wellKnownLocationsProperty ? JSON.parse(wellKnownLocationsProperty) : {"locations": []};
-            if(wellKnownLocations.locations.length === 0){
+            const locations = new wellKnownLocations(world.getDynamicProperty('tpwand_locations') as string);
+            if(locations.count() === 0){
               new ActionFormData().title("tpwand").body("No locations available!").button("Okay").show(player);
               return;
             }
-            let locationNames: string[] = [];
-            for(const wellKnownLocation of wellKnownLocations.locations){
-              locationNames.push(`${wellKnownLocation.name} (${wellKnownLocation.x}, ${wellKnownLocation.y}, ${wellKnownLocation.z})`);
-            }
             let form = new ModalFormData()
               .title("tpwand")
-              .dropdown('Teleport to location', locationNames);
+              .dropdown('Teleport to location', locations.names());
             form.show(event.source).then(r => {
               if(r.canceled) {
                 return;
               }
               if(r.formValues){
-                const index = Number(r.formValues[0]);
-                const wellKnownLocation = wellKnownLocations.locations[index];
-                const location: Vector3 = {x: wellKnownLocation.x, y: wellKnownLocation.y, z: wellKnownLocation.z};
                 player.sendMessage("Your wish is my command...");
-                player.teleport(location);
+                player.teleport(locations.get(r.formValues[0] as number));
               }
             }).catch((e) => {
               console.error(e, e.stack);
@@ -172,4 +195,4 @@ world.afterEvents.itemUse.subscribe((event: ItemUseAfterEvent) => {
   }
 });
 
-console.log("tpwand enabled...");
+console.log("tpwand enabled... XXX");
