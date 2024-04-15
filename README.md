@@ -6,14 +6,18 @@ tpwand is a Minecraft Bedrock add-on for multi-player games or Bedrock servers t
 
 It can be used as part of the normal Minecraft Bedrock client or as part of the Minecraft Bedrock Dedicated Server.
 
+## Demonstration
+
+A demonstration of the features can be seen at https://youtu.be/bM5eFTiljy4
+
 ## Features
 
-1) Teleport to another players location by selecting their name in a UI.
-2) Teleport to the current world spawn point.
-3) Teleport to locations previously created by yourself.
-4) User UI for in game configuration of named locations.
-5) Teleport to well known locations as previously created by an operator.
-6) Operator only UI for in game configuration of named well known locations.
+1. Teleport to another players location by selecting their name in a UI.
+2. Teleport to the current world spawn point.
+3. Teleport to locations previously created by yourself.
+4. User UI for in game configuration of named locations.
+5. Teleport to well known locations as previously created by an operator.
+6. Operator only UI for in game configuration of named well known locations.
 
 See [instructions](docs/Instructions.md) for further details of how to install and use the add-on.
 
@@ -25,8 +29,8 @@ See [instructions](docs/Instructions.md) for further details of how to install a
 
 From a command prompt/terminal browse to the repository and run:
 
-1) `npm install`
-2) `npm run mcaddon`
+1. `npm install`
+2. `npm run mcaddon`
 
 The add-on should be generated as dist/packages/tpwand.mcaddon
 
