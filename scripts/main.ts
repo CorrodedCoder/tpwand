@@ -12,6 +12,12 @@ import { ModalFormData, ActionFormData, ActionFormResponse, MessageFormData } fr
 
 const tpWandDynamicPropertyName = "tpwand_locations";
 
+const alphaSorter = (a: string, b: string) => {
+  // This is not very pretty, but when I tried it every other way it
+  // just kept sorting based on case.
+  return a.toLowerCase().localeCompare(b.toLowerCase());
+};
+
 function formButtonsOrDropdown(
   player: Player,
   options: string[],
@@ -70,6 +76,9 @@ class LocationRegistry {
 
   add(name: string, x: number, y: number, z: number) {
     this.locationData.locations.push({ name: name, x: x, y: y, z: z });
+    this.locationData.locations.sort((a: any, b: any) => {
+      return alphaSorter(a.name, b.name);
+    });
   }
 
   remove(index: number) {
@@ -216,6 +225,7 @@ function teleportToPlayerUI(player: Player, useDropdown: boolean) {
       playerNames.push(other.name);
     }
   }
+  playerNames.sort(alphaSorter);
   formButtonsOrDropdown(
     player,
     playerNames,
