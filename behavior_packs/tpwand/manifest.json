@@ -2,7 +2,7 @@
   "format_version": 2,
   "header": {
     "name": "tpwand behavior pack",
-    "description": "tpwand pack description",
+    "description": "tpwand pack V1.0.1",
     "uuid": "65a00286-c671-4970-bee0-5199df8d34d4",
     "version": [1, 0, 1],
     "min_engine_version": [1, 20, 60]
