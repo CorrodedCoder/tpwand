@@ -12,6 +12,84 @@ import { ModalFormData, ActionFormData, ActionFormResponse, MessageFormData } fr
 
 const tpWandDynamicPropertyName = "tpwand_locations";
 
+const alphaSorter = (a: string, b: string) => {
+  // This is not very pretty, but when I tried it every other way it
+  // just kept sorting based on case.
+  return a.toLowerCase().localeCompare(b.toLowerCase());
+};
+
+function displayOptionsGet(player: Player) {
+  const displayOptionsProperty = player.getDynamicProperty("tpwand_options") as string;
+  return displayOptionsProperty
+    ? JSON.parse(displayOptionsProperty)
+    : { player_use_dropdown: false, personal_use_dropdown: false, global_use_dropdown: false };
+}
+
+function displayOptionsSet(player: Player, displayOptions: any) {
+  player.setDynamicProperty("tpwand_options", JSON.stringify(displayOptions));
+}
+
+function displayOptionsUI(player: Player) {
+  let displayOptions = displayOptionsGet(player);
+  let form = new ModalFormData()
+    .title("tpwand display options")
+    .toggle("Player teleport use dropdown", displayOptions.player_use_dropdown)
+    .toggle("Personal locations use dropdown", displayOptions.personal_use_dropdown)
+    .toggle("Well known locations use dropdown", displayOptions.global_use_dropdown);
+  form.show(player).then((r) => {
+    if (r.canceled) {
+      return;
+    }
+    if (r.formValues) {
+      displayOptions.player_use_dropdown = r.formValues[0] as boolean;
+      displayOptions.personal_use_dropdown = r.formValues[1] as boolean;
+      displayOptions.global_use_dropdown = r.formValues[2] as boolean;
+      displayOptionsSet(player, displayOptions);
+    }
+  });
+}
+
+function formButtonsOrDropdown(
+  player: Player,
+  options: string[],
+  useDropdown: boolean,
+  titleText: string,
+  descriptionText: string,
+  emptyText: string,
+  action: (index: number) => void
+) {
+  if (options.length === 0) {
+    new ActionFormData().title(titleText).body(emptyText).button("Okay").show(player);
+    return;
+  }
+  if (useDropdown) {
+    const form = new ModalFormData().title(titleText).dropdown(descriptionText, options);
+    form
+      .show(player)
+      .then((r) => {
+        if (r.canceled) {
+          return;
+        }
+        if (r.formValues) {
+          action(r.formValues[0] as number);
+        }
+      })
+      .catch((e) => {
+        console.error(e, e.stack);
+      });
+  } else {
+    const form = new ActionFormData().title(titleText).body(descriptionText);
+    for (const name of options) {
+      form.button(name);
+    }
+    form.show(player).then((response: ActionFormResponse) => {
+      if (response.selection !== undefined) {
+        action(response.selection);
+      }
+    });
+  }
+}
+
 class LocationRegistry {
   locationData!: { [key: string]: any };
 
@@ -29,6 +107,9 @@ class LocationRegistry {
 
   add(name: string, x: number, y: number, z: number) {
     this.locationData.locations.push({ name: name, x: x, y: y, z: z });
+    this.locationData.locations.sort((a: any, b: any) => {
+      return alphaSorter(a.name, b.name);
+    });
   }
 
   remove(index: number) {
@@ -167,95 +248,95 @@ function teleportToWorldSpawnLocationUI(player: Player) {
   player.teleport(world.getDefaultSpawnLocation());
 }
 
-function teleportToPlayerUI(player: Player) {
+function teleportToPlayerUI(player: Player, useDropdown: boolean) {
   const otherPlayers: Player[] = world.getAllPlayers();
-  if (otherPlayers.length === 1) {
-    new ActionFormData().title("tpwand").body("No other players available!").button("Okay").show(player);
-    return;
-  }
   let playerNames: string[] = [];
   for (const other of otherPlayers) {
     if (other.name !== player.name) {
       playerNames.push(other.name);
     }
   }
-  let form = new ModalFormData().title("tpwand").dropdown("Teleport to player", playerNames);
-  form
-    .show(player)
-    .then((r) => {
-      if (r.canceled) {
-        return;
+  playerNames.sort(alphaSorter);
+  formButtonsOrDropdown(
+    player,
+    playerNames,
+    useDropdown,
+    "tpwand",
+    "Teleport to player",
+    "No other players available!",
+    (index: number) => {
+      const targetPlayerName = playerNames[index];
+      const other = otherPlayers.find((op: Player) => {
+        return op.name === targetPlayerName;
+      });
+      if (other) {
+        player.sendMessage("Your wish is my command...");
+        player.teleport(other.location);
       }
-      if (r.formValues) {
-        const targetPlayerName = playerNames[r.formValues[0] as number];
-        const other = otherPlayers.find((op: Player) => {
-          return op.name === targetPlayerName;
-        });
-        if (other) {
-          player.sendMessage("Your wish is my command...");
-          player.teleport(other.location);
-        }
-      }
-    })
-    .catch((e) => {
-      console.error(e, e.stack);
-    });
+    }
+  );
 }
 
-function teleportToWellKnownLocationUI(player: Player, locations: LocationRegistry) {
-  if (locations.count() === 0) {
-    new ActionFormData().title("tpwand").body("No locations available!").button("Okay").show(player);
-    return;
-  }
-  let form = new ModalFormData().title("tpwand").dropdown("Teleport to location", locations.names());
-  form
-    .show(player)
-    .then((r) => {
-      if (r.canceled) {
-        return;
-      }
-      if (r.formValues) {
-        player.sendMessage("Your wish is my command...");
-        player.teleport(locations.get(r.formValues[0] as number));
-      }
-    })
-    .catch((e) => {
-      console.error(e, e.stack);
-    });
+function teleportToWellKnownLocationUI(player: Player, locations: LocationRegistry, useDropdown: boolean) {
+  formButtonsOrDropdown(
+    player,
+    locations.names(),
+    useDropdown,
+    "tpwand",
+    "Teleport to location",
+    "No locations available!",
+    (index: number) => {
+      player.sendMessage("Your wish is my command...");
+      player.teleport(locations.get(index));
+    }
+  );
 }
 
 function teleportUI(player: Player) {
   const form = new ActionFormData()
     .title("tpwand")
     .body("Choose teleport action")
-    .button("Teleport to world spawn point")
     .button("Teleport to player")
-    .button("Teleport to well known location")
     .button("Teleport to personal known location")
-    .button("Configure personal known locations");
+    .button("Teleport to well known location")
+    .button("Teleport to world spawn point")
+    .button("Configure personal known locations")
+    .button("Display options");
   form.show(player).then((response: ActionFormResponse) => {
     switch (response.selection) {
       case undefined: {
         break;
       }
       case 0: {
-        teleportToWorldSpawnLocationUI(player);
+        teleportToPlayerUI(player, displayOptionsGet(player).player_use_dropdown);
         break;
       }
       case 1: {
-        teleportToPlayerUI(player);
+        teleportToWellKnownLocationUI(
+          player,
+          new PersonalLocationRegistry(player, tpWandDynamicPropertyName),
+          displayOptionsGet(player).personal_use_dropdown
+        );
         break;
       }
       case 2: {
-        teleportToWellKnownLocationUI(player, new WellKnownLocationRegistry(tpWandDynamicPropertyName));
+        teleportToWellKnownLocationUI(
+          player,
+          new WellKnownLocationRegistry(tpWandDynamicPropertyName),
+          displayOptionsGet(player).global_use_dropdown
+        );
         break;
       }
       case 3: {
-        teleportToWellKnownLocationUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName));
+        teleportToWorldSpawnLocationUI(player);
         break;
       }
       case 4: {
         locationRegistryUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName));
+        break;
+      }
+      case 5: {
+        displayOptionsUI(player);
         break;
       }
     }
