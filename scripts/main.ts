@@ -265,10 +265,10 @@ function teleportUI(player: Player) {
   const form = new ActionFormData()
     .title("tpwand")
     .body("Choose teleport action")
-    .button("Teleport to world spawn point")
     .button("Teleport to player")
-    .button("Teleport to well known location")
     .button("Teleport to personal known location")
+    .button("Teleport to well known location")
+    .button("Teleport to world spawn point")
     .button("Configure personal known locations");
   form.show(player).then((response: ActionFormResponse) => {
     switch (response.selection) {
@@ -276,11 +276,11 @@ function teleportUI(player: Player) {
         break;
       }
       case 0: {
-        teleportToWorldSpawnLocationUI(player);
+        teleportToPlayerUI(player, true);
         break;
       }
       case 1: {
-        teleportToPlayerUI(player, true);
+        teleportToWellKnownLocationUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName), true);
         break;
       }
       case 2: {
@@ -288,7 +288,7 @@ function teleportUI(player: Player) {
         break;
       }
       case 3: {
-        teleportToWellKnownLocationUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName), true);
+        teleportToWorldSpawnLocationUI(player);
         break;
       }
       case 4: {
