@@ -12,6 +12,47 @@ import { ModalFormData, ActionFormData, ActionFormResponse, MessageFormData } fr
 
 const tpWandDynamicPropertyName = "tpwand_locations";
 
+function formButtonsOrDropdown(
+  player: Player,
+  options: string[],
+  useDropdown: boolean,
+  titleText: string,
+  descriptionText: string,
+  emptyText: string,
+  action: (index: number) => void
+) {
+  if (options.length === 0) {
+    new ActionFormData().title(titleText).body(emptyText).button("Okay").show(player);
+    return;
+  }
+  if (useDropdown) {
+    const form = new ModalFormData().title(titleText).dropdown(descriptionText, options);
+    form
+      .show(player)
+      .then((r) => {
+        if (r.canceled) {
+          return;
+        }
+        if (r.formValues) {
+          action(r.formValues[0] as number);
+        }
+      })
+      .catch((e) => {
+        console.error(e, e.stack);
+      });
+  } else {
+    const form = new ActionFormData().title(titleText).body(descriptionText);
+    for (const name of options) {
+      form.button(name);
+    }
+    form.show(player).then((response: ActionFormResponse) => {
+      if (response.selection !== undefined) {
+        action(response.selection);
+      }
+    });
+  }
+}
+
 class LocationRegistry {
   locationData!: { [key: string]: any };
 
@@ -167,61 +208,47 @@ function teleportToWorldSpawnLocationUI(player: Player) {
   player.teleport(world.getDefaultSpawnLocation());
 }
 
-function teleportToPlayerUI(player: Player) {
+function teleportToPlayerUI(player: Player, useDropdown: boolean) {
   const otherPlayers: Player[] = world.getAllPlayers();
-  if (otherPlayers.length === 1) {
-    new ActionFormData().title("tpwand").body("No other players available!").button("Okay").show(player);
-    return;
-  }
   let playerNames: string[] = [];
   for (const other of otherPlayers) {
     if (other.name !== player.name) {
       playerNames.push(other.name);
     }
   }
-  let form = new ModalFormData().title("tpwand").dropdown("Teleport to player", playerNames);
-  form
-    .show(player)
-    .then((r) => {
-      if (r.canceled) {
-        return;
+  formButtonsOrDropdown(
+    player,
+    playerNames,
+    useDropdown,
+    "tpwand",
+    "Teleport to player",
+    "No other players available!",
+    (index: number) => {
+      const targetPlayerName = playerNames[index];
+      const other = otherPlayers.find((op: Player) => {
+        return op.name === targetPlayerName;
+      });
+      if (other) {
+        player.sendMessage("Your wish is my command...");
+        player.teleport(other.location);
       }
-      if (r.formValues) {
-        const targetPlayerName = playerNames[r.formValues[0] as number];
-        const other = otherPlayers.find((op: Player) => {
-          return op.name === targetPlayerName;
-        });
-        if (other) {
-          player.sendMessage("Your wish is my command...");
-          player.teleport(other.location);
-        }
-      }
-    })
-    .catch((e) => {
-      console.error(e, e.stack);
-    });
+    }
+  );
 }
 
-function teleportToWellKnownLocationUI(player: Player, locations: LocationRegistry) {
-  if (locations.count() === 0) {
-    new ActionFormData().title("tpwand").body("No locations available!").button("Okay").show(player);
-    return;
-  }
-  let form = new ModalFormData().title("tpwand").dropdown("Teleport to location", locations.names());
-  form
-    .show(player)
-    .then((r) => {
-      if (r.canceled) {
-        return;
-      }
-      if (r.formValues) {
-        player.sendMessage("Your wish is my command...");
-        player.teleport(locations.get(r.formValues[0] as number));
-      }
-    })
-    .catch((e) => {
-      console.error(e, e.stack);
-    });
+function teleportToWellKnownLocationUI(player: Player, locations: LocationRegistry, useDropdown: boolean) {
+  formButtonsOrDropdown(
+    player,
+    locations.names(),
+    useDropdown,
+    "tpwand",
+    "Teleport to location",
+    "No locations available!",
+    (index: number) => {
+      player.sendMessage("Your wish is my command...");
+      player.teleport(locations.get(index));
+    }
+  );
 }
 
 function teleportUI(player: Player) {
@@ -243,15 +270,15 @@ function teleportUI(player: Player) {
         break;
       }
       case 1: {
-        teleportToPlayerUI(player);
+        teleportToPlayerUI(player, true);
         break;
       }
       case 2: {
-        teleportToWellKnownLocationUI(player, new WellKnownLocationRegistry(tpWandDynamicPropertyName));
+        teleportToWellKnownLocationUI(player, new WellKnownLocationRegistry(tpWandDynamicPropertyName), true);
         break;
       }
       case 3: {
-        teleportToWellKnownLocationUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName));
+        teleportToWellKnownLocationUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName), true);
         break;
       }
       case 4: {
