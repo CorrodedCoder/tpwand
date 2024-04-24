@@ -18,6 +18,37 @@ const alphaSorter = (a: string, b: string) => {
   return a.toLowerCase().localeCompare(b.toLowerCase());
 };
 
+function displayOptionsGet(player: Player) {
+  const displayOptionsProperty = player.getDynamicProperty("tpwand_options") as string;
+  return displayOptionsProperty
+    ? JSON.parse(displayOptionsProperty)
+    : { player_use_dropdown: false, personal_use_dropdown: false, global_use_dropdown: false };
+}
+
+function displayOptionsSet(player: Player, displayOptions: any) {
+  player.setDynamicProperty("tpwand_options", JSON.stringify(displayOptions));
+}
+
+function displayOptionsUI(player: Player) {
+  let displayOptions = displayOptionsGet(player);
+  let form = new ModalFormData()
+    .title("tpwand display options")
+    .toggle("Player teleport use dropdown", displayOptions.player_use_dropdown)
+    .toggle("Personal locations use dropdown", displayOptions.personal_use_dropdown)
+    .toggle("Well known locations use dropdown", displayOptions.global_use_dropdown);
+  form.show(player).then((r) => {
+    if (r.canceled) {
+      return;
+    }
+    if (r.formValues) {
+      displayOptions.player_use_dropdown = r.formValues[0] as boolean;
+      displayOptions.personal_use_dropdown = r.formValues[1] as boolean;
+      displayOptions.global_use_dropdown = r.formValues[2] as boolean;
+      displayOptionsSet(player, displayOptions);
+    }
+  });
+}
+
 function formButtonsOrDropdown(
   player: Player,
   options: string[],
@@ -269,22 +300,31 @@ function teleportUI(player: Player) {
     .button("Teleport to personal known location")
     .button("Teleport to well known location")
     .button("Teleport to world spawn point")
-    .button("Configure personal known locations");
+    .button("Configure personal known locations")
+    .button("Display options");
   form.show(player).then((response: ActionFormResponse) => {
     switch (response.selection) {
       case undefined: {
         break;
       }
       case 0: {
-        teleportToPlayerUI(player, true);
+        teleportToPlayerUI(player, displayOptionsGet(player).player_use_dropdown);
         break;
       }
       case 1: {
-        teleportToWellKnownLocationUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName), true);
+        teleportToWellKnownLocationUI(
+          player,
+          new PersonalLocationRegistry(player, tpWandDynamicPropertyName),
+          displayOptionsGet(player).personal_use_dropdown
+        );
         break;
       }
       case 2: {
-        teleportToWellKnownLocationUI(player, new WellKnownLocationRegistry(tpWandDynamicPropertyName), true);
+        teleportToWellKnownLocationUI(
+          player,
+          new WellKnownLocationRegistry(tpWandDynamicPropertyName),
+          displayOptionsGet(player).global_use_dropdown
+        );
         break;
       }
       case 3: {
@@ -293,6 +333,10 @@ function teleportUI(player: Player) {
       }
       case 4: {
         locationRegistryUI(player, new PersonalLocationRegistry(player, tpWandDynamicPropertyName));
+        break;
+      }
+      case 5: {
+        displayOptionsUI(player);
         break;
       }
     }
