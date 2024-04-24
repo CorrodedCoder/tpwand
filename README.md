@@ -12,12 +12,14 @@ A demonstration of the features can be seen at https://youtu.be/bM5eFTiljy4
 
 ## Features
 
-1. Teleport to another players location by selecting their name in a UI.
-2. Teleport to the current world spawn point.
-3. Teleport to locations previously created by yourself.
-4. User UI for in game configuration of named locations.
-5. Teleport to well known locations as previously created by an operator.
-6. Operator only UI for in game configuration of named well known locations.
+A user interface allowing you to:
+
+1. Teleport to another players location by selecting their name.
+2. Teleport to locations previously created by yourself.
+3. Teleport to well known locations as previously created by an admin.
+4. Teleport to the current world spawn point.
+5. User UI for in game configuration of named locations.
+6. Admin only UI for in game configuration of well known locations.
 
 See [instructions](docs/Instructions.md) for further details of how to install and use the add-on.
 
