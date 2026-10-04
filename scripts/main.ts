@@ -22,9 +22,13 @@ const alphaSorter = (a: string, b: string) => {
 
 function displayOptionsGet(player: Player) {
   const displayOptionsProperty = player.getDynamicProperty("tpwand_options") as string;
-  return displayOptionsProperty
-    ? JSON.parse(displayOptionsProperty)
-    : { player_use_dropdown: false, personal_use_dropdown: false, global_use_dropdown: false };
+  const defaults = {
+    player_use_dropdown: false,
+    personal_use_dropdown: false,
+    global_use_dropdown: false,
+    auto_add_tpwand: true,
+  };
+  return displayOptionsProperty ? { ...defaults, ...JSON.parse(displayOptionsProperty) } : defaults;
 }
 
 function displayOptionsSet(player: Player, displayOptions: any) {
@@ -37,7 +41,8 @@ function displayOptionsUI(player: Player) {
     .title("tpwand display options")
     .toggle("Player teleport use dropdown", { defaultValue: displayOptions.player_use_dropdown })
     .toggle("Personal locations use dropdown", { defaultValue: displayOptions.personal_use_dropdown })
-    .toggle("Well known locations use dropdown", { defaultValue: displayOptions.global_use_dropdown });
+    .toggle("Well known locations use dropdown", { defaultValue: displayOptions.global_use_dropdown })
+    .toggle("Automatically add tpwand to hotbar", { defaultValue: displayOptions.auto_add_tpwand });
   form.show(player).then((r) => {
     if (r.canceled) {
       return;
@@ -46,6 +51,7 @@ function displayOptionsUI(player: Player) {
       displayOptions.player_use_dropdown = r.formValues[0] as boolean;
       displayOptions.personal_use_dropdown = r.formValues[1] as boolean;
       displayOptions.global_use_dropdown = r.formValues[2] as boolean;
+      displayOptions.auto_add_tpwand = r.formValues[3] as boolean;
       displayOptionsSet(player, displayOptions);
     }
   });
@@ -454,7 +460,7 @@ function registerTpWandEvents() {
   });
 
   world.afterEvents.playerSpawn.subscribe((event) => {
-    if (event.initialSpawn) {
+    if (event.initialSpawn && displayOptionsGet(event.player).auto_add_tpwand !== false) {
       addTpWandToHotbar(event.player);
     }
   });

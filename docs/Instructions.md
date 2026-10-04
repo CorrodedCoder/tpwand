@@ -15,7 +15,7 @@ When you join the world, a stick named "tpwand" is placed in the last hotbar slo
 3. Teleport to a well known location (previously created by an admin).
 4. Teleport to the world spawn point (if it has been set).
 5. In game UI to add/remove personal locations.
-6. In game UI to change display settings as to whether the teleport choices are buttons or a dropdown list (useful if you plan on larger lists).
+6. In game UI to change display settings as to whether the teleport choices are buttons or a dropdown list (useful if you plan on larger lists), and whether a tpwand is automatically added to your hotbar when you first join. Automatic adding is enabled by default.
 
 ## Testing the admin functionality
 
