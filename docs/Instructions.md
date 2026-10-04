@@ -1,53 +1,57 @@
-# tpwand 1.0.1
+# tpwand 1.1.0
 
-## Installing on a Bedrock client
+tpwand is a behavior-pack add-on for Minecraft Bedrock that makes teleporting around a shared world easier.
 
-To install you should just be able to unpack the zip file and double click on "tpwand.mcaddon". This should launch Minecraft and install the add-on.
+## Install on a Bedrock client
 
-Then either create a new world and enable this behaviour pack add-on or just enable it in an existing world. It shouldn't cause any trouble, but I could not swear to it.
+1. Open `tpwand.mcaddon` to import the add-on into Minecraft.
+2. Create a world, or edit an existing one, and enable the tpwand behavior pack.
 
-## Using the addon
+## Use tpwand
 
-When you join the world, a stick named "tpwand" is placed in the last hotbar slot. If that slot is occupied, its item is moved to an empty inventory slot when possible. Right-clicking the stick opens the UI, allowing you to:
+On your first join, tpwand is added to the last hotbar slot. If that slot is occupied, its item is moved to an empty inventory slot when possible. Use the stick named `tpwand` to open the menu.
 
-1. Teleport to the location of other players in your world.
-2. Teleport to a personal location (previously created by you).
-3. Teleport to a well known location (previously created by an admin).
-4. Teleport to the world spawn point (if it has been set).
-5. In game UI to add/remove personal locations.
-6. In game UI to change display settings as to whether the teleport choices are buttons or a dropdown list (useful if you plan on larger lists), and whether a tpwand is automatically added to your hotbar when you first join. Automatic adding is enabled by default.
+From the menu, you can:
 
-## Testing the admin functionality
+- Teleport to another player, a personal location, a well-known location, or the world spawn point.
+- Add or remove your personal locations.
+- Choose buttons or a dropdown for teleport destinations in **Display options**.
+- Enable or disable automatic hotbar addition in **Display options**. It is enabled by default.
 
-Create a command block and using an anvil name it "tpwandadmin". Right clicking on it will cause the UI to pop up allowing you to:
+### Configure well-known locations
 
-1. Add a well known location (it will default to your current location but you may change this).
-2. Remove a well known location.
+Players with operator permissions can choose **Configure well-known locations** from the tpwand menu. Alternatively, use the legacy command-block method:
 
-Once a well known location has been added a user with a tpwand stick will be able to teleport to any of the well known locations.
+1. Rename a command block `tpwandadmin` using an anvil.
+2. Use the renamed command block to open the configuration menu.
 
-## Installing on a Bedrock server
+The menu lets you add locations (starting at your current position) and remove existing ones. Players can then teleport to these locations from their own tpwand menu.
 
-To install this on a Bedrock server takes a little more work, but roughly:
+## Install on a Bedrock server
 
-1.  Using some unzip tool extract the contents of "tpwand.mcaddon", this will produce the file "tpwand.bp.mcpack".
-2.  Using some unzip tool extract the contents of "tpwand.bp.mcpack".
-3.  In your bedrock server under "development_behavior_packs" create a subdirectory called "tpwand" and copy the extracted contents there such that your layout looks like:
-    development_behavior_packs\tpwand\manifest.json
-    development_behavior_packs\tpwand\pack_icon.png
-    development_behavior_packs\tpwand\scripts
-    development_behavior_packs\tpwand\scripts\main.js
-4.  Run your server and after it has started shut it down.
-5.  Open "valid_known_packs.json" in the root of your server directory and you should now see an entry at the top for tpwand. Make a note of the uuid and version.
-6.  Under your "worlds\Bedrock level" directory (you might have renamed "Bedrock level" or have more than one world there) you should create or edit a file called "world_behavior_packs.json". It should include the following:
-    [
-    {
-    "pack_id" : "65a00286-c671-4970-bee0-5199df8d34d4",
-    "version" : [ 1, 0, 1 ]
-    }
-    ]
-    The `pack_id` should match the uuid you noted earlier and the version should also match. At the time of typing, the above is correct.
+1. Extract `tpwand.mcaddon`. This produces `tpwand_bp.mcpack`.
+2. Extract `tpwand_bp.mcpack`.
+3. Copy the extracted behavior pack into a `tpwand` directory under `development_behavior_packs`. The resulting structure should include:
 
-7.  Restart your server. If all went well you should see the following in your server log:
+   ```text
+   development_behavior_packs/tpwand/manifest.json
+   development_behavior_packs/tpwand/pack_icon.png
+   development_behavior_packs/tpwand/scripts/main.js
+   ```
 
-         [Scripting] tpwand enabled...
+4. In the directory for your world (usually `worlds/Bedrock level`), create or update `world_behavior_packs.json`. Use the `uuid` and `version` from the behavior pack's `header` in `manifest.json`. This example is for tpwand 1.1.0:
+
+   ```json
+   [
+     {
+       "pack_id": "65a00286-c671-4970-bee0-5199df8d34d4",
+       "version": [1, 1, 0]
+     }
+   ]
+   ```
+
+5. Restart the server. A successful load includes this message in the server log:
+
+   ```text
+   [Scripting] tpwand enabled...
+   ```

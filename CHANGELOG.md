@@ -1,5 +1,16 @@
 # Change Log
 
+## [1.1.0] - 2026-10-04
+
+### Added
+
+- Automatically add a tpwand to each player's hotbar on first join, with a per-player option to disable it. This is enabled by default.
+- Allow players with sufficient permission level to configure well known world locations from the tpwand UI without needing the command block hack.
+
+### Changed
+
+- Modernized the build and packaging pipeline and updated Node.js/TypeScript compatibility.
+
 ## [1.0.1] - 2024-04-24
 
 ### Changed
