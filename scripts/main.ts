@@ -1,7 +1,10 @@
 import {
+  Container,
   world,
   system,
   Player,
+  EntityInventoryComponent,
+  ItemStack,
   Vector3,
   ItemUseOnBeforeEvent,
   ItemUseOnAfterEvent,
@@ -357,6 +360,72 @@ function isTpWandEvent(event: ItemUseAfterEvent): boolean {
   return false;
 }
 
+function findTpWandInInventory(inventory: Container): number {
+  for (let slot = 0; slot < inventory.size; slot++) {
+    const item = inventory.getItem(slot);
+    if (item?.typeId === "minecraft:stick" && item.nameTag === "tpwand") {
+      return slot;
+    }
+  }
+  return -1;
+}
+
+function findEmptySlotInInventory(inventory: Container): number {
+  for (let slot = 0; slot < inventory.size; slot++) {
+    if (!inventory.getItem(slot)) {
+      return slot;
+    }
+  }
+  return -1;
+}
+
+function createTpWand() {
+  const tpWand = new ItemStack("minecraft:stick");
+  tpWand.nameTag = "tpwand";
+  return tpWand;
+}
+
+function addTpWandToHotbar(player: Player) {
+  const inventoryComponent = player.getComponent(EntityInventoryComponent.componentId) as
+    | EntityInventoryComponent
+    | undefined;
+  const inventory = inventoryComponent?.container;
+  if (!inventory) {
+    return;
+  }
+
+  let existingTpWandSlot = findTpWandInInventory(inventory);
+  // Found a tpwand in the right pladce, nothing to do
+  if (existingTpWandSlot === 8) {
+    return;
+  }
+
+  // Found a tpwand in the inventory, but not in the right place, swap it with whatever is in hotbar slot 8
+  if (existingTpWandSlot !== -1) {
+    inventory.swapItems(existingTpWandSlot, 8, inventory);
+    return;
+  }
+
+  // No tpwand found in the inventory: create one
+  const tpWand = createTpWand();
+
+  // Check if there is an item in hotbar slot 8
+  const lastHotbarItem = inventory.getItem(8);
+  if (!lastHotbarItem) {
+    // No item in hotbar slot 8, just put the new tpwand there
+    inventory.setItem(8, tpWand);
+    return;
+  }
+
+  // If there is an empty slot in the inventory, swap hotbar slot 8 with it
+  const emptySlot = findEmptySlotInInventory(inventory);
+  if (emptySlot !== -1) {
+    inventory.swapItems(emptySlot, 8, inventory);
+  }
+
+  inventory.setItem(8, tpWand);
+}
+
 function registerTpWandEvents() {
   world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
     if (isTpWandAdminEvent(event)) {
@@ -374,6 +443,12 @@ function registerTpWandEvents() {
   world.afterEvents.itemUse.subscribe((event: ItemUseAfterEvent) => {
     if (isTpWandEvent(event)) {
       teleportUI(event.source);
+    }
+  });
+
+  world.afterEvents.playerSpawn.subscribe((event) => {
+    if (event.initialSpawn) {
+      addTpWandToHotbar(event.player);
     }
   });
 }

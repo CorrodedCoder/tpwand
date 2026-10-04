@@ -8,7 +8,7 @@ Then either create a new world and enable this behaviour pack add-on or just ena
 
 ## Using the addon
 
-Create a stick and using an anvil name it "tpwand". Right clicking on it will cause the UI to pop up allowing you to:
+When you join the world, a stick named "tpwand" is placed in the last hotbar slot. If that slot is occupied, its item is moved to an empty inventory slot when possible. Right-clicking the stick opens the UI, allowing you to:
 
 1. Teleport to the location of other players in your world.
 2. Teleport to a personal location (previously created by you).
