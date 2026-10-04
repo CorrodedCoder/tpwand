@@ -6,8 +6,7 @@ import {
   EntityInventoryComponent,
   ItemStack,
   Vector3,
-  ItemUseOnBeforeEvent,
-  ItemUseOnAfterEvent,
+  PlayerInteractWithBlockBeforeEvent,
   ItemUseBeforeEvent,
   ItemUseAfterEvent,
 } from "@minecraft/server";
@@ -36,9 +35,9 @@ function displayOptionsUI(player: Player) {
   let displayOptions = displayOptionsGet(player);
   let form = new ModalFormData()
     .title("tpwand display options")
-    .toggle("Player teleport use dropdown", displayOptions.player_use_dropdown)
-    .toggle("Personal locations use dropdown", displayOptions.personal_use_dropdown)
-    .toggle("Well known locations use dropdown", displayOptions.global_use_dropdown);
+    .toggle("Player teleport use dropdown", { defaultValue: displayOptions.player_use_dropdown })
+    .toggle("Personal locations use dropdown", { defaultValue: displayOptions.personal_use_dropdown })
+    .toggle("Well known locations use dropdown", { defaultValue: displayOptions.global_use_dropdown });
   form.show(player).then((r) => {
     if (r.canceled) {
       return;
@@ -167,9 +166,9 @@ function locationRegistryUIAdd(locations: SerializedLocationRegistry, player: Pl
   let form = new ModalFormData()
     .title("tpwand add location")
     .textField("name", "")
-    .textField("x", player.location.x.toFixed(1), player.location.x.toFixed(1))
-    .textField("y", player.location.y.toFixed(1), player.location.y.toFixed(1))
-    .textField("z", player.location.z.toFixed(1), player.location.z.toFixed(1));
+    .textField("x", player.location.x.toFixed(1), { defaultValue: player.location.x.toFixed(1) })
+    .textField("y", player.location.y.toFixed(1), { defaultValue: player.location.y.toFixed(1) })
+    .textField("z", player.location.z.toFixed(1), { defaultValue: player.location.z.toFixed(1) });
   form
     .show(player)
     .then((r) => {
@@ -305,6 +304,10 @@ function teleportUI(player: Player) {
     .button("Teleport to world spawn point")
     .button("Configure personal known locations")
     .button("Display options");
+  const permissionLevel = player.playerPermissionLevel;
+  if (typeof permissionLevel === "number" && permissionLevel >= 2) {
+    form.button("Configure well known locations");
+  }
   form.show(player).then((response: ActionFormResponse) => {
     switch (response.selection) {
       case undefined: {
@@ -342,12 +345,16 @@ function teleportUI(player: Player) {
         displayOptionsUI(player);
         break;
       }
+      case 6: {
+        locationRegistryUI(player, new WellKnownLocationRegistry(tpWandDynamicPropertyName));
+        break;
+      }
     }
   });
 }
 
-function isTpWandAdminEvent(event: ItemUseAfterEvent | ItemUseOnAfterEvent): boolean {
-  if (event.itemStack.typeId === "minecraft:command_block" && event.itemStack.nameTag === "tpwandadmin") {
+function isTpWandAdminEvent(itemStack: ItemStack | undefined): boolean {
+  if (itemStack?.typeId === "minecraft:command_block" && itemStack.nameTag === "tpwandadmin") {
     return true;
   }
   return false;
@@ -428,14 +435,14 @@ function addTpWandToHotbar(player: Player) {
 
 function registerTpWandEvents() {
   world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
-    if (isTpWandAdminEvent(event)) {
+    if (isTpWandAdminEvent(event.itemStack)) {
       event.cancel = true;
       system.run(() => locationRegistryUI(event.source, new WellKnownLocationRegistry(tpWandDynamicPropertyName)));
     }
   });
 
-  world.beforeEvents.itemUseOn.subscribe((event: ItemUseOnBeforeEvent) => {
-    if (isTpWandAdminEvent(event)) {
+  world.beforeEvents.playerInteractWithBlock.subscribe((event: PlayerInteractWithBlockBeforeEvent) => {
+    if (isTpWandAdminEvent(event.itemStack)) {
       event.cancel = true;
     }
   });

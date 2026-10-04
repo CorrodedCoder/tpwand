@@ -5,7 +5,7 @@
     "description": "tpwand pack V1.0.1",
     "uuid": "65a00286-c671-4970-bee0-5199df8d34d4",
     "version": [1, 0, 1],
-    "min_engine_version": [1, 20, 60]
+    "min_engine_version": [1, 21, 100]
   },
   "modules": [
     {
@@ -20,11 +20,11 @@
   "dependencies": [
     {
       "module_name": "@minecraft/server",
-      "version": "1.8.0"
+      "version": "2.1.0"
     },
     {
       "module_name": "@minecraft/server-ui",
-      "version": "1.1.0"
+      "version": "2.0.0"
     }
   ]
 }
