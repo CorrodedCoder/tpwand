@@ -1,10 +1,12 @@
 import {
+  Container,
   world,
   system,
   Player,
+  EntityInventoryComponent,
+  ItemStack,
   Vector3,
-  ItemUseOnBeforeEvent,
-  ItemUseOnAfterEvent,
+  PlayerInteractWithBlockBeforeEvent,
   ItemUseBeforeEvent,
   ItemUseAfterEvent,
 } from "@minecraft/server";
@@ -20,9 +22,13 @@ const alphaSorter = (a: string, b: string) => {
 
 function displayOptionsGet(player: Player) {
   const displayOptionsProperty = player.getDynamicProperty("tpwand_options") as string;
-  return displayOptionsProperty
-    ? JSON.parse(displayOptionsProperty)
-    : { player_use_dropdown: false, personal_use_dropdown: false, global_use_dropdown: false };
+  const defaults = {
+    player_use_dropdown: false,
+    personal_use_dropdown: false,
+    global_use_dropdown: false,
+    auto_add_tpwand: true,
+  };
+  return displayOptionsProperty ? { ...defaults, ...JSON.parse(displayOptionsProperty) } : defaults;
 }
 
 function displayOptionsSet(player: Player, displayOptions: any) {
@@ -33,9 +39,10 @@ function displayOptionsUI(player: Player) {
   let displayOptions = displayOptionsGet(player);
   let form = new ModalFormData()
     .title("tpwand display options")
-    .toggle("Player teleport use dropdown", displayOptions.player_use_dropdown)
-    .toggle("Personal locations use dropdown", displayOptions.personal_use_dropdown)
-    .toggle("Well known locations use dropdown", displayOptions.global_use_dropdown);
+    .toggle("Player teleport use dropdown", { defaultValue: displayOptions.player_use_dropdown })
+    .toggle("Personal locations use dropdown", { defaultValue: displayOptions.personal_use_dropdown })
+    .toggle("Well known locations use dropdown", { defaultValue: displayOptions.global_use_dropdown })
+    .toggle("Automatically add tpwand to hotbar", { defaultValue: displayOptions.auto_add_tpwand });
   form.show(player).then((r) => {
     if (r.canceled) {
       return;
@@ -44,6 +51,7 @@ function displayOptionsUI(player: Player) {
       displayOptions.player_use_dropdown = r.formValues[0] as boolean;
       displayOptions.personal_use_dropdown = r.formValues[1] as boolean;
       displayOptions.global_use_dropdown = r.formValues[2] as boolean;
+      displayOptions.auto_add_tpwand = r.formValues[3] as boolean;
       displayOptionsSet(player, displayOptions);
     }
   });
@@ -164,9 +172,9 @@ function locationRegistryUIAdd(locations: SerializedLocationRegistry, player: Pl
   let form = new ModalFormData()
     .title("tpwand add location")
     .textField("name", "")
-    .textField("x", player.location.x.toFixed(1), player.location.x.toFixed(1))
-    .textField("y", player.location.y.toFixed(1), player.location.y.toFixed(1))
-    .textField("z", player.location.z.toFixed(1), player.location.z.toFixed(1));
+    .textField("x", player.location.x.toFixed(1), { defaultValue: player.location.x.toFixed(1) })
+    .textField("y", player.location.y.toFixed(1), { defaultValue: player.location.y.toFixed(1) })
+    .textField("z", player.location.z.toFixed(1), { defaultValue: player.location.z.toFixed(1) });
   form
     .show(player)
     .then((r) => {
@@ -302,6 +310,10 @@ function teleportUI(player: Player) {
     .button("Teleport to world spawn point")
     .button("Configure personal known locations")
     .button("Display options");
+  const permissionLevel = player.playerPermissionLevel;
+  if (typeof permissionLevel === "number" && permissionLevel >= 2) {
+    form.button("Configure well known locations");
+  }
   form.show(player).then((response: ActionFormResponse) => {
     switch (response.selection) {
       case undefined: {
@@ -339,12 +351,16 @@ function teleportUI(player: Player) {
         displayOptionsUI(player);
         break;
       }
+      case 6: {
+        locationRegistryUI(player, new WellKnownLocationRegistry(tpWandDynamicPropertyName));
+        break;
+      }
     }
   });
 }
 
-function isTpWandAdminEvent(event: ItemUseAfterEvent | ItemUseOnAfterEvent): boolean {
-  if (event.itemStack.typeId === "minecraft:command_block" && event.itemStack.nameTag === "tpwandadmin") {
+function isTpWandAdminEvent(itemStack: ItemStack | undefined): boolean {
+  if (itemStack?.typeId === "minecraft:command_block" && itemStack.nameTag === "tpwandadmin") {
     return true;
   }
   return false;
@@ -357,16 +373,82 @@ function isTpWandEvent(event: ItemUseAfterEvent): boolean {
   return false;
 }
 
+function findTpWandInInventory(inventory: Container): number {
+  for (let slot = 0; slot < inventory.size; slot++) {
+    const item = inventory.getItem(slot);
+    if (item?.typeId === "minecraft:stick" && item.nameTag === "tpwand") {
+      return slot;
+    }
+  }
+  return -1;
+}
+
+function findEmptySlotInInventory(inventory: Container): number {
+  for (let slot = 0; slot < inventory.size; slot++) {
+    if (!inventory.getItem(slot)) {
+      return slot;
+    }
+  }
+  return -1;
+}
+
+function createTpWand() {
+  const tpWand = new ItemStack("minecraft:stick");
+  tpWand.nameTag = "tpwand";
+  return tpWand;
+}
+
+function addTpWandToHotbar(player: Player) {
+  const inventoryComponent = player.getComponent(EntityInventoryComponent.componentId) as
+    | EntityInventoryComponent
+    | undefined;
+  const inventory = inventoryComponent?.container;
+  if (!inventory) {
+    return;
+  }
+
+  let existingTpWandSlot = findTpWandInInventory(inventory);
+  // Found a tpwand in the right pladce, nothing to do
+  if (existingTpWandSlot === 8) {
+    return;
+  }
+
+  // Found a tpwand in the inventory, but not in the right place, swap it with whatever is in hotbar slot 8
+  if (existingTpWandSlot !== -1) {
+    inventory.swapItems(existingTpWandSlot, 8, inventory);
+    return;
+  }
+
+  // No tpwand found in the inventory: create one
+  const tpWand = createTpWand();
+
+  // Check if there is an item in hotbar slot 8
+  const lastHotbarItem = inventory.getItem(8);
+  if (!lastHotbarItem) {
+    // No item in hotbar slot 8, just put the new tpwand there
+    inventory.setItem(8, tpWand);
+    return;
+  }
+
+  // If there is an empty slot in the inventory, swap hotbar slot 8 with it
+  const emptySlot = findEmptySlotInInventory(inventory);
+  if (emptySlot !== -1) {
+    inventory.swapItems(emptySlot, 8, inventory);
+  }
+
+  inventory.setItem(8, tpWand);
+}
+
 function registerTpWandEvents() {
   world.beforeEvents.itemUse.subscribe((event: ItemUseBeforeEvent) => {
-    if (isTpWandAdminEvent(event)) {
+    if (isTpWandAdminEvent(event.itemStack)) {
       event.cancel = true;
       system.run(() => locationRegistryUI(event.source, new WellKnownLocationRegistry(tpWandDynamicPropertyName)));
     }
   });
 
-  world.beforeEvents.itemUseOn.subscribe((event: ItemUseOnBeforeEvent) => {
-    if (isTpWandAdminEvent(event)) {
+  world.beforeEvents.playerInteractWithBlock.subscribe((event: PlayerInteractWithBlockBeforeEvent) => {
+    if (isTpWandAdminEvent(event.itemStack)) {
       event.cancel = true;
     }
   });
@@ -374,6 +456,12 @@ function registerTpWandEvents() {
   world.afterEvents.itemUse.subscribe((event: ItemUseAfterEvent) => {
     if (isTpWandEvent(event)) {
       teleportUI(event.source);
+    }
+  });
+
+  world.afterEvents.playerSpawn.subscribe((event) => {
+    if (event.initialSpawn && displayOptionsGet(event.player).auto_add_tpwand !== false) {
+      addTpWandToHotbar(event.player);
     }
   });
 }
